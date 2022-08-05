@@ -8,8 +8,8 @@ from scipy.spatial.transform import Rotation
 from sklearn.decomposition import PCA
 
 import open3d as o3d
-from pycpd import RigidRegistration, DeformableRegistration, AffineRegistration
-import matplotlib.pyplot as plt
+# from pycpd import RigidRegistration, DeformableRegistration, AffineRegistration
+# import matplotlib.pyplot as plt
 
 
 def transform_affine(affine, point_cloud):
@@ -24,6 +24,16 @@ def transform_affine(affine, point_cloud):
     temp[:, :-1] = point_cloud
     return affine.dot(temp.T).T[:, :-1]
 
+def rotation(k, n=np.array([0, 0, 1])):
+    """
+    from one point and a direction, generate a rotation the fit n into k, the rotation direction
+    is the n x k axis
+    :return:
+    """
+    w = np.cross(n, k)
+    w = w / norm(w)
+    theta = np.arccos(np.dot(n, k) / (norm(n) * norm(k)) ** 0.5)
+    return Rotation.from_rotvec(w * theta).as_matrix()
 
 def load(paths):
     """
@@ -134,9 +144,15 @@ def extract_lobes_voxel(voxel_grid, point_cloud=None):
     return data_left, data_right
 
 
+######################################################################
+### Here is some functions about ICP and CPD registration test, not mandatory for the registration of thyroid using
+### detection of trachea as a cylinder
+######################################################################
+
+
+
 def get_pca(point_cloud):
     """
-
     :param point_cloud: (n, n_params) ndarray
     :return: PCA fitted object from sklearn.decomposition
     """
@@ -212,34 +228,34 @@ def display_pca_registration(source, target):
     print_pca_axis(pca_target, target, "target")
     ps.show()
 
-
-def cpd_registration(source, target, mod='rigid', w=0., verbose=False, max_iterations=None):
-    """
-    Try to register twi point cloud using a coherent point drift algorithm
-    :param source: transformed point cloud
-    :param target: reference point cloud
-    :param mod: 'rigid', 'affine' or 'deformable'
-    :param w : between 0 and 1 - percentage of outliers
-    """
-    if verbose:
-        callback = None
-        pass  # display of every iteration not implemented
-    else:
-        callback = None
-
-    if mod == 'rigid':
-        registration = RigidRegistration(**{'X': target, 'Y': source, 'w': w, 'max_iterations': max_iterations})
-    elif mod == 'deformable':
-        registration = DeformableRegistration(**{'X': target, 'Y': source, 'w': w})
-    elif mod == 'affine':
-        registration = AffineRegistration(**{'X': target, 'Y': source, 'w': w})
-    else:
-        raise ValueError
-    TY1, _ = registration.register(callback)
-
-    if callback:
-        plt.show()
-    return TY1
+#
+# def cpd_registration(source, target, mod='rigid', w=0., verbose=False, max_iterations=None):
+#     """
+#     Try to register twi point cloud using a coherent point drift algorithm
+#     :param source: transformed point cloud
+#     :param target: reference point cloud
+#     :param mod: 'rigid', 'affine' or 'deformable'
+#     :param w : between 0 and 1 - percentage of outliers
+#     """
+#     if verbose:
+#         callback = None
+#         pass  # display of every iteration not implemented
+#     else:
+#         callback = None
+#
+#     if mod == 'rigid':
+#         registration = RigidRegistration(**{'X': target, 'Y': source, 'w': w, 'max_iterations': max_iterations})
+#     elif mod == 'deformable':
+#         registration = DeformableRegistration(**{'X': target, 'Y': source, 'w': w})
+#     elif mod == 'affine':
+#         registration = AffineRegistration(**{'X': target, 'Y': source, 'w': w})
+#     else:
+#         raise ValueError
+#     TY1, _ = registration.register(callback)
+#
+#     if callback:
+#         plt.show()
+#     return TY1
 
 
 def icp_registration(source, target, align=False, initial_transform=None):
@@ -273,15 +289,4 @@ def icp_registration(source, target, align=False, initial_transform=None):
 
     return transform_affine(reg.transformation, source), reg.transformation
 
-
-def rotation(k, n=np.array([0, 0, 1])):
-    """
-    from one point and a direction, generate a rotation the fit n into k, the rotation direction
-    is the n x k axis
-    :return:
-    """
-    w = np.cross(n, k)
-    w = w / norm(w)
-    theta = np.arccos(np.dot(n, k) / (norm(n) * norm(k)) ** 0.5)
-    return Rotation.from_rotvec(w * theta).as_matrix()
 
