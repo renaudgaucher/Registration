@@ -19,7 +19,7 @@ nibabel (to load nifti images) \
 pathlib (to handle path) \
 open3d (for a few functionnalities: merging two mesh, generate a mesh of a cylinder, not mandatory) 
 
-
+# files description 
 
 The main algorithm is in cylinder_detection.py : the main function is cylinder_detection that detect a cylinder on the surface of a mesh using prior information. 
 
