@@ -195,7 +195,7 @@ def ransac_fit(point_cloud_3d, faces, normals, possible_directions, direction_li
             for j in range(k):
                 loss, delta_mu = ransac_loss(
                     cylinder=(centers[j, :], radius[j], direction),
-                    point_cloud_3d=point_cloud_3d, threshold=ransac_threshold,
+                    point_cloud_3d=point_cloud_3d, ransac_threshold=ransac_threshold,
                     normals=normals,
                     direction_likelihood=direction_likelihood[i_direction]
                 )
@@ -216,7 +216,7 @@ def ransac_fit(point_cloud_3d, faces, normals, possible_directions, direction_li
     return localization_map, best_cylinder
 
 
-def ransac_loss(cylinder, point_cloud_3d, normals, threshold, direction_likelihood):
+def ransac_loss(cylinder, point_cloud_3d, normals, ransac_threshold, direction_likelihood):
     """
     :param direction_likelihood:
     :param cylinder: (0,r,d) params of the cylinder
@@ -225,9 +225,9 @@ def ransac_loss(cylinder, point_cloud_3d, normals, threshold, direction_likeliho
     :param threshold: float : define the points in the inlier subset
     :return: loss, delta_mu : loss corresponding to the cylinder and a localization map with it
     """
-    mu = 10
-    sigma = 4
-    epsilon = threshold / 1.96
+    mu = 10  # average size of normal trachea (here is a trade of between male and female data)
+    sigma = 4  # standard deviation of normal trachea (here is a trade of between male and female data)
+    epsilon = ransac_threshold / 1.96  # accepted variations of thyroid surface near the cylinder
 
     O, r, d = cylinder
 
@@ -236,7 +236,7 @@ def ransac_loss(cylinder, point_cloud_3d, normals, threshold, direction_likeliho
     distances = norm(point_cloud_2d, axis=-1)
     inlier_index = np.argwhere(
         1 -
-        (1 - (distances < r + threshold) * ((point_cloud_2d * normals).sum(axis=-1) <= 0))
+        (1 - (distances < r + ransac_threshold) * ((point_cloud_2d * normals).sum(axis=-1) <= 0))
         * (distances > r)
     )[:, 0]  # inliers are closer than r or closer than r + threshold AND normal is going towards center of the circle
 
@@ -317,7 +317,7 @@ def hough_orientation_detection(point_cloud3D=None, normals=None, precision=1.,
         print(f"hough voting system: {normals.shape[0]} points to handle ...")
 
     # prior limit angle for orientation
-    prior_angle = 90.
+    prior_angle = 90.  # no prior angle # useless
     theta_limit = (90 - prior_angle) / 180 * np.pi
     phi_limit = (90 - prior_angle) / 180 * np.pi
 
@@ -449,12 +449,15 @@ def detect_normals(point_cloud3D, normal_radius=1.2, avg_nn=40, verbose=True):
         around 1/0.12² point/mm²
     :return: (n,3) : normals of the point_cloud
     """
+    IMAGE_SAMPLING_STEP = 0.12  # distance between pixel in the nifti image used
+
     date = time.time()
     if verbose:
         print(f"detecting normals on {point_cloud3D.shape[0]} points ...")
-    kdt = KDTree(point_cloud3D)
 
-    subsample_size = int(0.12 ** 2 * avg_nn * point_cloud3D.shape[0] / (3.14 * normal_radius ** 2))
+
+    kdt = KDTree(point_cloud3D)
+    subsample_size = int(IMAGE_SAMPLING_STEP ** 2 * avg_nn * point_cloud3D.shape[0] / (3.14 * normal_radius ** 2))
     subsample_size = min(subsample_size, point_cloud3D.shape[0])
     print(f"subsample size : {subsample_size}, original size : {point_cloud3D.shape[0]}")
     subkdt = KDTree(point_cloud3D[np.random.choice(point_cloud3D.shape[0], subsample_size, replace=False), :])
