@@ -14,7 +14,7 @@ OUTPUT_PATH = DATA_PATH / "outputs" / "analysis"
 def main():
     i = 0
     for path in PATH_US.glob("*-labels.nii"):
-        if int(path.parts[-1][:-11]) not in [6]:
+        if int(path.parts[-1][:-11]) not in [16]:
             continue
 
         print(f"Working on {path}")
@@ -44,10 +44,10 @@ def main():
         verts, faces = np.array(cylinder_mesh.vertices), np.array(cylinder_mesh.triangles)
         verts_cylinder = verts @ rot.T + center
 
-        ps.init()
-        ps_mesh_l = ps.register_surface_mesh(
-            "thyroid", pc_thyroid, faces_thyroid)
-        ps_mesh_l.add_scalar_quantity("localization map", loc_map)
+        # ps.init()
+        # ps_mesh_l = ps.register_surface_mesh(
+        #     "thyroid", pc_thyroid, faces_thyroid)
+        # ps_mesh_l.add_scalar_quantity("localization map", loc_map)
         ps.register_surface_mesh(
             "cylinder left", verts_cylinder, faces)
         ps.show()

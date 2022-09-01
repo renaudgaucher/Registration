@@ -98,6 +98,12 @@ def cylinder_detection(point_cloud_3d, faces, recompute_normals=False, verbose=T
         print(f"cylinder detected : (0,n,r,L) = {cylinder_center},{axis},{r},{length}")
         print(f"cylinder detection done in {time.time() - date:.3f}s")
 
+    import polyscope as ps
+    ps.init()
+    ps_thyroid = ps.register_surface_mesh("smooth thyroid", point_cloud_3d, faces)
+    ps_thyroid.add_scalar_quantity("localization_map", localization_map)
+    ps_thyroid.add_vector_quantity("recomputed normals", normals)
+
     return cylinder_center, axis, r, length, localization_map
 
 
@@ -324,7 +330,7 @@ def hough_orientation_detection(point_cloud3D=None, normals=None, precision=1.,
     theta = np.arange(theta_limit, np.pi - theta_limit + angle_precision, angle_precision)
     phi = np.arange(phi_limit, np.pi - phi_limit + angle_precision, angle_precision)
 
-    # ATTENTION : May overlap current memory of too much normals vector and precision
+    # ATTENTION : May overlap current memory if to much normals vector and to much precision
     # Memory use : batch_size * 360 * 4 / precision bytes
     # e.g if precision ~ 0.1, batch_size = 2¹², memory use is ~1.44 Go, but actually much more like ~10 Go
     batch_size = int(2 ** 12)
